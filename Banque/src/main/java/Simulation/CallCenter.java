@@ -95,11 +95,14 @@ public class CallCenter {
 
       public Call() {
          serviceTime = genServ.nextDouble(); // Generate service time.
+         
+         
          if (nBusy < nAgents) {           // Start service immediately.
             nBusy++;
             nGoodQoS++;
             statWaitsDay.add (0.0);
             new CallCompletion().schedule (serviceTime);
+            
          } else {                         // Join the queue.
             patienceTime = generPatience();
             arrivalTime = Sim.time();
@@ -146,7 +149,9 @@ public class CallCenter {
 
    // Event: A   arrives.
    class Arrival extends Event {
+	   
       public void actions() {
+    	  
          nextArrival.schedule 
             (ExponentialDist.inverseF (arrRate, streamArr.nextDouble()));
          nArrivals++;

@@ -20,16 +20,14 @@ public abstract class Client {
 	
 	double arrivalTime, serviceTime, patienceTime;
 	
-	RandomVariateGen genServe; // For service times; created in readData().
 	 
-	public Client(double mu, double sigma) throws IOException {
+	public Client() throws IOException {
 		
 	      // genServ can be created only after its parameters are read.
 	      // The acceptanc/rejection method is much faster than inversion.
 	     
-		genServe = new RandomVariateGen(new MRG32k3a(), new LognormalDist(mu, sigma));  
-	      
 	      
 	  }
+	  
 
 }

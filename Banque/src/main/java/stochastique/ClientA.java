@@ -10,18 +10,14 @@ import java.util.LinkedList;
 
 public class ClientA extends Client {
 	
-	RandomVariateGen genArrival;
+
 	
-	
-	public ClientA(double lambda, double muA, double sigmaA) throws IOException {
+	public ClientA() throws IOException {
 		
-		super(muA, sigmaA);
-		
-		
-		genArrival = new RandomVariateGen(new MRG32k3a(), new PoissonDist(lambda));
-		
-		
+		super();
 		// TODO Auto-generated constructor stub
 	}
 
+	
+	
 }

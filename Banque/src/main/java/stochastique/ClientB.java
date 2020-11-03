@@ -9,9 +9,19 @@ import java.util.StringTokenizer;
 import java.util.LinkedList;
 
 public class ClientB extends Client {
-
-	public ClientB() {
+	
+	//RandomStream numeroClientB = new MRG32k3a();
+	int numeroClientB;
+	int numeroConseillerD;
+	double heureArrivee;
+	
+	public ClientB(int numeroConseillerD, double heureArrivee, int numeroClientB) throws IOException {
+		
+		super();
+		
+		this.numeroConseillerD = numeroConseillerD;
+		this.heureArrivee = heureArrivee;
+		this.numeroClientB = numeroClientB;
 		// TODO Auto-generated constructor stub
 	}
-
 }
