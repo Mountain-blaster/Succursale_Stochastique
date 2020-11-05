@@ -1,31 +1,16 @@
 package stochastique;
 
 public class RendezVous {
+	
 	double heureRv;
-	int numeroClientB ;
-	Plage plageRv ;
+	int numeroClientB;
 	
 	
-	
-	
-	class Plage{
-		int numeroPlage;
-		double r;
+	public RendezVous(double heureRv, int numeroClientB) {
 		
-		public Plage(int numeroPlage, double r) {
-			this.numeroPlage = numeroPlage;
-			this.r = r;
-		}
-	}
-	
-	
-	
-	
-	public RendezVous(double heureRv, int numeroClientB, Plage plageRv) {
 		this.heureRv = heureRv;
 		this.numeroClientB = numeroClientB;
-		this.plageRv = plageRv;
 	}
-
+	
 }
 

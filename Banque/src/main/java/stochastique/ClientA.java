@@ -11,13 +11,10 @@ import java.util.LinkedList;
 public class ClientA extends Client {
 	
 
-	
-	public ClientA() throws IOException {
+	public ClientA() {
 		
 		super();
 		// TODO Auto-generated constructor stub
 	}
-
-	
 	
 }

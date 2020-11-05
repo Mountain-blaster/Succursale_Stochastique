@@ -1,28 +1,55 @@
 package stochastique;
-import umontreal.ssj.simevents.*;
 import umontreal.ssj.rng.*;
-import umontreal.ssj.randvar.*;
-import umontreal.ssj.probdist.*;
-import umontreal.ssj.stat.Tally;
-import java.io.*;
-import java.util.StringTokenizer;
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 public class Conseiller {
-
-	//double[] plage;
 	
+	double r; // Probabilite d'avoir rendez-vous sur une plage
 	int numeroConseillerD;
 	
+	RandomStream probR = new MRG32k3a();
+	RandomStream time = new MRG32k3a();
+	
+	ArrayList<Plage> liste_des_reunions = new ArrayList<Plage>();
 	
 	//Constructor;
 	public Conseiller(int numeroConseillerD) {
+		
 		this.numeroConseillerD = numeroConseillerD;
 	}
 	
 	
-	ArrayList<Plage> Reunions = new ArrayList<Plage> ();
-	
-
+	public ArrayList<Plage> getReunions() {
+		
+		Plage reunion;
+		
+		for(int i = 1; i<=12 ; i++) {
+			
+			double u = probR.nextDouble();
+			
+			if(u <= r) {
+				
+				double heureRv = time.nextDouble();
+				
+				RendezVous Rv = new RendezVous(heureRv, i);
+				
+				reunion = new Plage(Rv, i);
+				
+			}
+			
+			else {
+				
+				RendezVous Rv = null;
+				
+				reunion = new Plage(Rv, i);
+				
+			}
+			
+			liste_des_reunions.add(reunion);
+			
+		}
+		
+		return liste_des_reunions;
+		
+	}	
 }

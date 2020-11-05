@@ -48,7 +48,9 @@ public class Succursale {
 	
 	RandomStream streamArr = new MRG32k3a();
 	
-	RandomVariateGen genArr;
+	RandomVariateGen genArrA;
+	
+	RandomVariateGen genArrB;
 	
 	RandomVariateGen genServA;
 	
@@ -63,7 +65,10 @@ public class Succursale {
 	public Succursale(double lambda, double muA, double sigmaA, double muB, double sigmaB) {
 		
 
-		genArr = new RandomVariateGen(new MRG32k3a(), new PoissonDist(lambda));
+		genArrA = new RandomVariateGen(new MRG32k3a(), new PoissonDist(lambda));
+		
+		
+		//genArrB = new RandomVariateGen(new MRG32k3a(), new NormalDist(muR, sigmaR));
 		
 		
 		genServA = new RandomVariateGen(new MRG32k3a(), new LognormalDist(muA, sigmaA));

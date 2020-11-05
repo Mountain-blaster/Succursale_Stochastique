@@ -21,12 +21,10 @@ public abstract class Client {
 	double arrivalTime, serviceTime, patienceTime;
 	
 	 
-	public Client() throws IOException {
+	public Client() {
 		
 	      // genServ can be created only after its parameters are read.
-	      // The acceptanc/rejection method is much faster than inversion.
-	     
-	      
+	      // The acceptanc/rejection method is much faster than inversion.  
 	  }
 	  
 
