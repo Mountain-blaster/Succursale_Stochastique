@@ -7,10 +7,9 @@ public class Plage {
 		
 		
 	public Plage (RendezVous Rv, int numeroPlage) {
-			
+		
 		this.Rv = Rv;
 		this.numeroPlage = numeroPlage;
-		
 	}
 
 }

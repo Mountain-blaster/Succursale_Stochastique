@@ -7,7 +7,6 @@ public class RendezVous {
 	
 	
 	public RendezVous(double heureRv, int numeroClientB) {
-		
 		this.heureRv = heureRv;
 		this.numeroClientB = numeroClientB;
 	}

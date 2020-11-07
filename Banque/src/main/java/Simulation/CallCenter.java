@@ -1,5 +1,6 @@
 package Simulation;
 import umontreal.ssj.simevents.*;
+
 import umontreal.ssj.rng.*;
 import umontreal.ssj.randvar.*;
 import umontreal.ssj.probdist.*;
@@ -172,7 +173,9 @@ public class CallCenter {
 
    // Generates the patience time for a call.
    public double generPatience() {
+	   
       double u = streamPatience.nextDouble();
+      
       if (u <= p) 
          return 0.0;
       else 

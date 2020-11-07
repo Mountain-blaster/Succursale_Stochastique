@@ -4,11 +4,9 @@ import java.util.ArrayList;
 
 public class Conseiller {
 	
-	double r; // Probabilite d'avoir rendez-vous sur une plage
 	int numeroConseillerD;
+	boolean libre; //dit si le conseiller est libre ou pas
 	
-	RandomStream probR = new MRG32k3a();
-	RandomStream time = new MRG32k3a();
 	
 	ArrayList<Plage> liste_des_reunions = new ArrayList<Plage>();
 	
@@ -19,37 +17,27 @@ public class Conseiller {
 	}
 	
 	
-	public ArrayList<Plage> getReunions() {
-		
+	public ArrayList<Plage> getReunions(double r, double openingTime) {
 		Plage reunion;
 		
-		for(int i = 1; i<=12 ; i++) {
-			
-			double u = probR.nextDouble();
+		for(int i = 0; i<=11 ; i++) {
+			double u = new MRG32k3a().nextDouble();
 			
 			if(u <= r) {
-				
-				double heureRv = time.nextDouble();
-				
+				double heureRv = openingTime*3600 + i*1800;
 				RendezVous Rv = new RendezVous(heureRv, i);
-				
 				reunion = new Plage(Rv, i);
-				
 			}
 			
 			else {
 				
 				RendezVous Rv = null;
-				
 				reunion = new Plage(Rv, i);
-				
 			}
 			
 			liste_des_reunions.add(reunion);
-			
 		}
 		
 		return liste_des_reunions;
-		
 	}	
 }

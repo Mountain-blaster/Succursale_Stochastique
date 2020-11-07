@@ -1,0 +1,15 @@
+10.0        opening
+3           numPeriods
+3  2  20.0  numCaissiers, numConseillers, lambda(arrival rate)
+4  3  35.0
+3  3  28.0
+200.0       mu_a
+60.0        sigma_a
+100.0       mu_r
+90.0        sigma_r
+1200.0      mu_b
+480.0       sigma_b
+0.8         r
+0.05        p
+600.0       s
+1000        n

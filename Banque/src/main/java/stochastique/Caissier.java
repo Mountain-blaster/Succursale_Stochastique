@@ -9,5 +9,8 @@ import java.util.StringTokenizer;
 import java.util.LinkedList;
 
 public class Caissier {
-
+	
+	public Caissier() {
+		// TODO Auto-generated constructor stub
+	}
 }

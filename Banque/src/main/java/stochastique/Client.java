@@ -16,15 +16,10 @@ import java.util.LinkedList;
 
 public abstract class Client {
 	
-	// Data
+	double arrivalTime, serviceTime;
 	
-	double arrivalTime, serviceTime, patienceTime;
-	
-	 
 	public Client() {
-		
-	      // genServ can be created only after its parameters are read.
-	      // The acceptanc/rejection method is much faster than inversion.  
+		// TODO Auto-generated constructor stub
 	  }
 	  
 
