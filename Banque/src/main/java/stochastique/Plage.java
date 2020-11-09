@@ -11,5 +11,9 @@ public class Plage {
 		this.Rv = Rv;
 		this.numeroPlage = numeroPlage;
 	}
+	
+	public Plage(int numeroPlage) {
+		this.numeroPlage = numeroPlage;
+	}
 
 }

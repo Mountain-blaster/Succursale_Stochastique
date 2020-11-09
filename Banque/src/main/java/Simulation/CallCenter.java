@@ -205,7 +205,7 @@ public class CallCenter {
 
    public static void main (String[] args) throws IOException { 
       CallCenter cc = new CallCenter ("CallCenter.dat"); 
-      for (int i=1; i <= 1000; i++)  cc.simulateOneDay();
+      for (int i=1; i <= 10; i++)  cc.simulateOneDay();
       System.out.println ("\nNum. calls expected = " + cc.nCallsExpected +"\n");
       System.out.println (
          cc.statArrivals.reportAndCIStudent (0.9) +

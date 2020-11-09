@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class Conseiller {
 	
 	int numeroConseillerD;
-	boolean libre; //dit si le conseiller est libre ou pas
+	boolean libre = true; //dit si le conseiller est libre ou pas
 	
 	
 	ArrayList<Plage> liste_des_reunions = new ArrayList<Plage>();
@@ -14,6 +14,7 @@ public class Conseiller {
 	public Conseiller(int numeroConseillerD) {
 		
 		this.numeroConseillerD = numeroConseillerD;
+//		this.libre = true;
 	}
 	
 	
@@ -23,7 +24,7 @@ public class Conseiller {
 		for(int i = 0; i<=11 ; i++) {
 			double u = new MRG32k3a().nextDouble();
 			
-			if(u <= r) {
+			if(u >= r) {
 				double heureRv = openingTime*3600 + i*1800;
 				RendezVous Rv = new RendezVous(heureRv, i);
 				reunion = new Plage(Rv, i);
@@ -39,5 +40,10 @@ public class Conseiller {
 		}
 		
 		return liste_des_reunions;
-	}	
+	}
+	/*
+	
+	public String toString() {
+		return "\n Conseiller de numero : " + numeroConseillerD + " est libre ? " + libre;
+	}*/
 }

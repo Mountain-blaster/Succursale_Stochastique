@@ -1,59 +1,76 @@
 package stochastique;
-import umontreal.ssj.simevents.*;
-
-import umontreal.ssj.rng.*;
-import umontreal.ssj.randvar.*;
-import umontreal.ssj.probdist.*;
-import umontreal.ssj.stat.Tally;
-import java.io.*;
-import java.util.StringTokenizer;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.StringTokenizer;
+
+import umontreal.ssj.charts.HistogramChart;
+import umontreal.ssj.probdist.ExponentialDist;
+import umontreal.ssj.probdist.LognormalDist;
+import umontreal.ssj.probdist.NormalDist;
+import umontreal.ssj.probdist.PoissonDist;
+import umontreal.ssj.randvar.RandomVariateGen;
+import umontreal.ssj.rng.MRG32k3a;
+import umontreal.ssj.rng.RandomStream;
+import umontreal.ssj.simevents.Accumulate;
+import umontreal.ssj.simevents.Event;
+import umontreal.ssj.simevents.Sim;
+import umontreal.ssj.stat.Tally;
+import umontreal.ssj.stat.TallyStore;
 
 public class Succursale {
 	
 	 static final double HOUR = 3600.0;  // Time is in seconds.
 	
 	
-	Accumulate toWaitA = new Accumulate("Taille de la file d'attente A");
-	Accumulate toWaitB = new Accumulate("Taille de la file d'attente B");
+	Accumulate toWaitA = new Accumulate("Taille de la file d'attente A pour n jour");
+	Accumulate toWaitB = new Accumulate("Taille de la file d'attente B pour n jour");
 	
+	TallyStore[] tally =  new TallyStore[4];
+	TallyStore SumwaitsA = tally[0] =new TallyStore("Temps d'attente moyenne des clients A pour n jours");
+	TallyStore SumwaitsB = tally[1] = new TallyStore("Temps d'attente moyenne des clients B pour n jours");
+	//TallyStore[] tally =  new TallyStore[4];
+	
+	
+	Tally custWaitsA = new Tally("Temps d'attente moyen pour un client A i.e (wa)");
+	Tally statWaitsDayA = new Tally ("Temps d'attente de chauqe client A pour une jour");
 	Tally statArrivalsA = new Tally ("Nombre de clients A recu par jour");
-	Tally custWaitsA = new Tally("Temps d'attente des clients A");
-	Tally statWaitsDayA = new Tally ("Waiting times within a day");
 	
-	Tally custWaitsB = new Tally("Temps d'attente des clients B");
-	Tally statWaitsDayB = new Tally ("Waiting times within a day");
+	Tally custWaitsB = new Tally("Temps d'attente des clients B i.e (wb)");
+	Tally statWaitsDayB = new Tally ("Temps d'attente de chauqe client B pour une jour");
 	Tally statArrivalsB = new Tally ("Nombre de clients B recu par jours");
 	
 	double openingTime;    // Heure d'ouverture de la banque.
 	double arrRate = 0.0;  // Current arrival rate.
 	double[] lambda;       // Base arrival rate lambda_j for each j.
-	double muA;  // Current arrival rate.
-	double sigmaA;  // Current arrival rate.
-	double muB;  // Current arrival rate.
-	double sigmaB;  // Current arrival rate.
-	double muR;  // Current arrival rate.
-	double sigmaR;  // Current arrival rate.
-	double s; //duree pour qu'un conseiller serve un client A
+	double lambdaj;
+	double muA;  // declaration de la variable muA.
+	double sigmaA; 
+	double muB;  
+	double sigmaB;  
+	double muR; 
+	double sigmaR;  
+	double s; //duree minmale pour qu'un conseiller serve un client A
 	double p; // probabilite de ne pas se presenter pour le client type B
 	double r; // Probabilite d'avoir rendez-vous sur une plage
 	int numPeriods;        // Number de periodes de travail (hours) pour un jour.
 	int numPlages = 12;        // Nombre de plages pour un jour.
 	int n; // nombre de jours
 	
-	int nArrivalsA;         // Number of arrivals today;
+	int nArrivalsA;         //  Nombre de clients A qui arrivent par jour;
 	int nBusyCaissiers;         
 	int[] nCaissiers;       // Number of agents for each period. 
 	int nj;       		// Nombre de caissiers durant la periode j
 	int nClientAPrevu; // Nombre de clients A prevu pour la journee.
 	
-	int mArrivalsB;         // Number of arrivals today
-	int mBusyConseillers; //Nombre de cconseillers occupes durant une periode
+	int mArrivalsB;         //  Nombre de clients B qui arrivent par jour;
+	int mBusyConseillers; //Nombre de conseillers occupes durant une periode
 	int[] mConseillers; //Nombre de conseillers pour chaque periode 
 	int mj; //Nombre de conseillers durant la periode j;
 	int mClientBPrevu; // Nombre de clients B prevu pour la journee.
+	
 	
 	
 	Event nextArrivalA = new ArrivalA();  
@@ -79,8 +96,6 @@ public class Succursale {
 	
 	
 	public Succursale(String fileName) throws IOException{
-		//genArrA = new RandomVariateGen(new MRG32k3a(), new PoissonDist(lambda));
-		//genArrB = new RandomVariateGen(new MRG32k3a(), new NormalDist(muR, sigmaR));
 		readData (fileName);
 		genServA = new RandomVariateGen(new MRG32k3a(), new LognormalDist(muA, sigmaA));
 		genServB = new RandomVariateGen(new MRG32k3a(), new LognormalDist(muB, sigmaB));
@@ -91,23 +106,21 @@ public class Succursale {
 		public void actions() {
 			nextArrivalA.schedule(ExponentialDist.inverseF (arrRate, streamArrA.nextDouble()));
 			nArrivalsA++;
-			System.out.println (nArrivalsA); 
-			ClientA custA = new ClientA(); // Call just arrived.
-			
+			ClientA custA = new ClientA(); // Client  qui vient d'arriver.
 			custA.arrivalTime = Sim.time();
 			custA.serviceTime =genServA.nextDouble();
 			
+			//Verifions s'il y a des caissiers libres
 			if(nBusyCaissiers < nj) {
-				custWaitsA.add(0.0);
+				statWaitsDayA.add(0.0);
 				servListA.addLast(custA);
 				nBusyCaissiers++;
-				//new DepartureA().schedule(custA.serviceTime);
 			}
 			else {
 				waitListA.addLast(custA);
 				toWaitA.update(waitListA.size());
 			}
-      }
+		}
 	}
 	
 	
@@ -117,7 +130,7 @@ public class Succursale {
 		while((waitListA.size()>0) && (nBusyCaissiers < nj)) {
 			ClientA clienta = ((ClientA)waitListA.removeFirst());
 			toWaitA.update(waitListA.size());
-			custWaitsA.add(Sim.time() - clienta.arrivalTime);
+			statWaitsDayA.add(Sim.time() - clienta.arrivalTime);
 			servListA.addLast(clienta);
 			nBusyCaissiers++;
 			nextDepartureA.schedule(clienta.serviceTime);
@@ -136,28 +149,30 @@ public class Succursale {
 	
 	class NextPeriod extends Event {
 		int j; // numero de la periode
-		public NextPeriod (int period) { j = period;}
-		
+		public NextPeriod (int period) {
+			j = period;
+		}
 		public void actions() {
+			conseillerList.clear();
 			if(j < numPeriods) {
 				nj = nCaissiers[j];
 				mj = mConseillers[j];
-				for(int i = 0; i<mj; i++) {
+			for(int i = 0; i<mj; i++) {
 					conseillerList.add(new Conseiller(i));
 				}
-				System.out.println("Il y a " + conseillerList.size()+ " conseillers pour la periode j="+j);
-				arrRate = lambda[j] / HOUR;
+				arrRate = lambda[j] / (2.0 * HOUR);
 				
 				if(j == 0) {
 					//generer l'arrivee du premier clientA
 					nextArrivalA.schedule(ExponentialDist.inverseF (arrRate, streamArrA.nextDouble()));
+					nextArrivalB.schedule(0.0);
 				}
 				else {
-					checkQueueA();
 					nextArrivalA.reschedule((nextArrivalA.time() - Sim.time()) 
                             * lambda[j-1] / lambda[j]);
+					nextArrivalB.scheduleNext();
+					
 				}
-				conseillerList.clear();
 				new NextPeriod(j+1).schedule(2.0 * HOUR);
 			}
 			else {nextArrivalA.cancel();}
@@ -166,21 +181,20 @@ public class Succursale {
 	
 	
 	
-	// ClientA possibilite d'etre servi par les conseillers
-	
+	// ClientA (la possibilite d'etre servi par un conseiller)
 	public boolean ConseillerServA(int numeroConseillerD) {
 		Conseiller conseiller = new Conseiller(numeroConseillerD);
-		ArrayList<Plage> Plage = conseiller.getReunions(r, openingTime*HOUR);
+		ArrayList<Plage> Plage = conseiller.getReunions(r, openingTime);
 		double heureRv = Plage.get(numPlages).Rv.heureRv;			
 		if ((Sim.time() - heureRv) > s) {
 			return true;
 		}
-		
 		return false;	
 	}
 	
-	// Generer l'arrivee des clients de type B
 	
+	
+	// Generer l'arrivee des clients de type B (Verification de son arrivee)
 	public boolean verArrB (ClientB clientb) {
 		clientb.p = p;
 		double u = streamArrB.nextDouble();
@@ -192,11 +206,11 @@ public class Succursale {
 		}	
 	}
 	
+	
+	// Recuperer le conseiller qui doit servir un client specifique
 	public Conseiller getConseiller(int numeroConseillerD) {
 		Conseiller conseillerB;
-		
-		
-		for(int i = 0; i<conseillerList.size() ; i++) {
+		for(int i = 0; i<2 ; i++) {
 			if(conseillerList.get(i).numeroConseillerD == numeroConseillerD ) {
 				conseillerB = conseillerList.get(i);
 				return conseillerB;
@@ -206,10 +220,12 @@ public class Succursale {
 	}
 	
 	
+	
+	// Gestion de l'evenement Arrivee d'un client A
 	class ArrivalB extends Event {
 		public void actions() {
 			int numeroConsB1 =   new MRG32k3a().nextInt(0, mj-1);
-			ClientB custB1 = new ClientB(numeroConsB1); 			
+			ClientB custB1 = new ClientB(numeroConsB1);
 			if (verArrB(custB1)) {
 				mArrivalsB++;
 				RandomVariateGen R = new RandomVariateGen(new MRG32k3a(), new NormalDist(muR, sigmaR));
@@ -217,121 +233,116 @@ public class Succursale {
 				custB1.arrivalTime = Sim.time();
 				custB1.serviceTime = genServB.nextDouble();
 				Conseiller conseillerB1 = getConseiller(custB1.numeroConseillerD);
-				ArrayList<Plage> Plage = conseillerB1.getReunions(r, openingTime * HOUR);
-				custB1.heureRv = Plage.get(custB1.numeroClientB).Rv.heureRv;
-				System.out.println(custB1.heureRv);
-				nextArrivalB.schedule(0.5*HOUR + retard);
-				
-				
-				if ((custB1.heureRv <= Sim.time()) && (conseillerB1.libre == true)) {
-					if (retard <= 0) {
-						double wait = Sim.time() - custB1.arrivalTime;
-						custWaitsB.add(wait);
-					}
-					else {
-						custWaitsB.add(0.0);
-					}
-					conseillerB1.libre = false;
-					servListB.addLast(custB1);
-					mBusyConseillers++;
-					new DepartureB().reschedule(custB1.serviceTime);
-					conseillerB1.libre = true;
+				try {
+					ArrayList<Plage> Plage = conseillerB1.getReunions(r, openingTime);
+					RendezVous Rv = Plage.get(custB1.numeroClientB).Rv;
+					if ((Plage != null) && (Rv != null)) {
+						custB1.heureRv = Rv.heureRv;
+						
+						if ((custB1.heureRv <= Sim.time()) && (conseillerB1.libre == true)) {
+							if (retard <= 0) {
+								double wait = custB1.heureRv - custB1.arrivalTime;
+								statWaitsDayB.add(wait);
+							}
+							else {
+								
+								statWaitsDayB.add(0.0);
+							}
+							conseillerB1.libre = false;
+							servListB.addLast(custB1);
+							mBusyConseillers++;
+							new DepartureB().schedule(custB1.serviceTime);
+							conseillerB1.libre = true;
+							
+							try {
+								RendezVous Rv1 =  Plage.get(custB1.numeroClientB + 1).Rv;
+								double interprochainheureRv = Rv1.heureRv - Sim.time();
 					
-					double interprochainheureRv = Plage.get(numPlages + 1).Rv.heureRv - Sim.time();
-					while ((waitListA.size() > 0) && (interprochainheureRv >= s)) {
-						//commencer un service pour le client A
-						ClientA custA2 = (ClientA)waitListA.removeFirst();
-						toWaitA.update(waitListA.size());
-						custWaitsA.add (Sim.time() -  custA2.arrivalTime);
-						servListA.addLast(custA2);
-						nextDepartureA.schedule(custA2.serviceTime);
+								while ((waitListA.size() > 0) && (interprochainheureRv >= s)) {
+									//commencer un service pour le client A
+									ClientA custA2 = (ClientA)waitListA.removeFirst();
+									toWaitA.update(waitListA.size());
+									statWaitsDayA.add (Sim.time() -  custA2.arrivalTime);
+									servListA.addLast(custA2);
+									nextDepartureA.schedule(custA2.serviceTime);
+								}
+						      }
+						      catch (Exception e) { 
+						    	 while ((waitListA.size() > 0)) {
+										//commencer un service pour le client A
+										ClientA custA2 = (ClientA)waitListA.removeFirst();
+										toWaitA.update(waitListA.size());
+										statWaitsDayA.add (Sim.time() -  custA2.arrivalTime);
+										servListA.addLast(custA2);
+										nextDepartureA.schedule(custA2.serviceTime);
+									}
+						      }
+						}
+						else {
+							waitListB.addLast(custB1);
+							toWaitB.update(waitListB.size());
+						}
 					}
 				}
-				else {
-					waitListB.addLast(custB1);
-					toWaitB.update(waitListB.size());
-				}
+			    catch (Exception e) { 
+
+			    }
+		
 			}
 		}
 	}
 	
+	
+	
 	public void checkQueueB() {
-		while((waitListB.size()>0) && (mBusyConseillers <mj)) {
-			ClientB custB1 = ((ClientB)waitListB.removeFirst());
-			// On recupere le conseiller qui doit servir le client B1
-			Conseiller conseillerB1 = getConseiller(custB1.numeroConseillerD);
-			
-			ArrayList<Plage> Plage = conseillerB1.getReunions(r, openingTime*HOUR);
-			RandomVariateGen R = new RandomVariateGen(new MRG32k3a(), new NormalDist(muR, sigmaR));
-			double retard = R.nextDouble();
-			custB1.heureRv = Plage.get(numPlages).Rv.heureRv;
-
-			if ((custB1.heureRv <= Sim.time()) && (conseillerB1.libre == true)) {
-				if (retard < 0) {
-					double wait = Sim.time() - custB1.arrivalTime;
-					custWaitsB.add(wait);
-				}
-				else {
-					custWaitsB.add(0.0);
-				}
-				mBusyConseillers++;
-				conseillerB1.libre = false;
-				servListB.addLast(custB1);
-				new DepartureB().schedule(custB1.serviceTime);
-				conseillerB1.libre = true;
+		try {
+			if(waitListB.size()>0 && mBusyConseillers < mj) {
+				//on parcourt la liste d'attente des clients de type B pour en extraire ceux dont le serveur est libre
+				for(int i = 0; i<waitListB.size(); i++) {
+					// on recupere le numero du conseiller du client
+					int numeroConsCust1 = waitListB.get(i).numeroConseillerD;
 					
-				double interprochainheureRv = Plage.get(numPlages + 1).Rv.heureRv - Sim.time();
 					
-				while ((waitListA.size() > 0) && (interprochainheureRv >= s)) {
-					//commencer un service pour le client A
-					ClientA custA2 = (ClientA)waitListA.removeFirst();
-					toWaitA.update(waitListA.size());
-					custWaitsA.add (Sim.time() -  custA2.arrivalTime);
-					servListA.addLast(custA2);
-					nextDepartureA.schedule(custA2.serviceTime);
+					// Si le conseiller est libre le client passe entre en service
+					if(conseillerList.get(numeroConsCust1).libre) {
+						
+						
+						double attente = Sim.time()-waitListB.get(i).arrivalTime;
+						waitListB.remove(i);
+						toWaitB.update(waitListB.size());
+						mBusyConseillers++;
+						conseillerList.get(numeroConsCust1).libre = false;
+						statWaitsDayB.add(attente);
+						nextDepartureB.schedule(waitListB.get(i).serviceTime);
+					}
 				}
 			}
-			else {
-				waitListB.addLast(custB1);
-				toWaitB.update(waitListB.size());
-			}
-		}
+	      }
+		
+	      catch (Exception e) { 
+	       
+	      }
 	}
 	
 
 	
 	class DepartureB extends Event {
 		public void actions() {	
-			servListB.removeFirst();
-			mBusyConseillers--;
+			try {
+				servListB.removeFirst();
+				
+			}
+			catch(Exception e) {
+				mBusyConseillers--;
+				checkQueueB();
+			}
+			
 	    }
 		
 	}
 	
-	class NextPlage extends Event {
-		int plage_p;
-		public NextPlage(int plage) { plage_p = plage;}
-		
-		public void actions() {
-			if(plage_p < numPlages) {
-				if(plage_p%4 == 0) {
-					//nextArrivalB.schedule((new RandomVariateGen(new MRG32k3a(), new NormalDist(muR, sigmaR)).nextDouble()));
-					nextArrivalB.schedule(0.0);
-				}
-				else {
-					checkQueueB(); 
-					nextArrivalB.scheduleNext();
-				}
-				new NextPlage(plage_p+1).schedule (0.5 * HOUR);
-			}
-			else {nextArrivalB.cancel();}
-		}
-	}
 	
-	
-	
-	
-	// Reads data and construct arrays.
+	// Affectiation des valeurs a nos variables en important le fichier SUCCURSALE.JAVA.
 	public void readData (String fileName) throws IOException {
 		BufferedReader input = new BufferedReader (new FileReader (fileName));
 	    StringTokenizer line = new StringTokenizer (input.readLine());
@@ -344,13 +355,18 @@ public class Succursale {
 	    lambda = new double[numPeriods];
 	    nClientAPrevu = 0;
 	    mClientBPrevu = 0;
+	    
 	    for (int j=0; j < numPeriods; j++) {
 	    	line = new StringTokenizer (input.readLine());
 	        nCaissiers[j] = Integer.parseInt (line.nextToken());
 	        mConseillers[j] = Integer.parseInt (line.nextToken());
 	        lambda[j]    = Double.parseDouble (line.nextToken());
-	        nClientAPrevu = (int) lambda[j];
-	        mClientBPrevu += mConseillers[j]*4;
+	        lambdaj = lambda[j];
+	        genArrA = new RandomVariateGen(new MRG32k3a(), new PoissonDist(lambdaj));
+			
+	   
+	        nClientAPrevu += genArrA.nextDouble();
+	        mClientBPrevu += 4 * mConseillers[j];
 	    }
 	    line = new StringTokenizer (input.readLine());
 	    muA = Double.parseDouble (line.nextToken());
@@ -384,31 +400,35 @@ public class Succursale {
 	      
 
 	      new NextPeriod(0).schedule (openingTime * HOUR);
-	      //new NextPlage(0).schedule (openingTime * HOUR);
 	      Sim.start();
-	      // Here the simulation is running...
-
-	      statArrivalsA.add ((double)nArrivalsA);
-	      //statArrivalsB.add ((double)mArrivalsB);
-	      custWaitsA.add (statWaitsDayA.sum() / nClientAPrevu);
-	      //custWaitsB.add (statWaitsDayB.sum() / mClientBPrevu);
+	      // La simulation  a commence...
+	      statArrivalsA.add (nArrivalsA);
+	      statArrivalsB.add (mArrivalsB);
+	      SumwaitsA.add(statWaitsDayA.sum());
+	      SumwaitsB.add(custWaitsB.sum());
 	      
+	      custWaitsA.add (statWaitsDayA.sum() / nClientAPrevu);
+	      custWaitsB.add (statWaitsDayB.sum() / mClientBPrevu);	      
 	}
 
 	   
 	public static void main (String[] args) throws IOException{ 
 	      Succursale cc = new Succursale ("Succursale.dat"); 
-	      for (int i=1; i <= 1; i++)  cc.simulateOneDay();
-	      System.out.println ("\nNum. clients A expected = " + cc.nClientAPrevu +"\n");
-	      System.out.println ("\nNum. clients B expected = " + cc.mClientBPrevu +"\n");
+	      for (int i=0; i <1000; i++) {
+	    	  cc.simulateOneDay();
+	      }
 	      System.out.println (cc.toWaitA.report());
 	      System.out.println (cc.custWaitsA.report()); 
 	      System.out.println (cc.statArrivalsA.report());
-	      System.out.println ("\n==================================================================\n");
-	      //System.out.println (cc.toWaitB.report());
-	      //System.out.println (cc.custWaitsB.report());
-	      //System.out.println (cc.statArrivalsB.report());
-	      System.out.println (cc.nArrivalsA); 
-	      //System.out.println (cc.conseillerList.size()); 
-	   }
+	      System.out.println ("\n==================================================================================\n");
+	      System.out.println (cc.toWaitB.report());
+	      System.out.println (cc.custWaitsB.report());
+	      System.out.println (cc.statArrivalsB.report());
+	      HistogramChart HistoA;	HistogramChart HistoB;
+	      
+	      //HistoA = new HistogramChart( cc.SumwaitsA);
+	      
+	      //HistoB = new HistogramChart("temps d'attente par jour pour B", "temps d'attente B", "n", cc.SumwaitsB.getDoubleArrayList());
+	      //HistoA.view(600, 600);
+		}
 	}

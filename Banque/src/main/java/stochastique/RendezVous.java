@@ -11,5 +11,10 @@ public class RendezVous {
 		this.numeroClientB = numeroClientB;
 	}
 	
+	/*
+	public String toString() {
+		return "\nHeure de Rv : " + heureRv +" avec client de numero: " + numeroClientB;
+	}*/
+	
 }
 
